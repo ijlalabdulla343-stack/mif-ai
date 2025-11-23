@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIFTORA | Philosophical Synthesis Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-neon: #8B5CF6;
+            --secondary-glow: #2DD4BF;
+            --dark-bg-main: #0B0B14;
+            --dark-bg-card: #151624;
+            --dark-bg-input: #0D0E1C;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg-main);
+            color: #E5E7EB;
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+            padding-bottom: 70px;
+            padding-top: clamp(20px, 5vw, 40px);
+            transition: background-color 0.5s;
+            position: relative;
+        }
+        
+        .neon-text {
+            color: var(--primary-neon);
+        }
+
+        .card-shadow {
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 
+                        0 0 40px rgba(139, 92, 246, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        @media (hover: hover) {
+            .card-shadow:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), 
+                            0 0 60px rgba(139, 92, 246, 0.4);
+            }
+        }
+        
+        .input-glow-border {
+            border: 2px solid #33364D;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .input-glow-border::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .input-glow-border:focus-within {
+            border-color: var(--primary-neon);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3), 
+                        0 0 30px rgba(139, 92, 246, 0.4),
+                        inset 0 0 20px rgba(139, 92, 246, 0.1);
+        }
+
+        .input-glow-border:focus-within::before {
+            left: 100%;
+        }
+
+        #animationCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.25;
+            pointer-events: none;
+        }
+
+        .main-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 clamp(12px, 4vw, 20px);
+            display: flex;
+            flex-direction: column;
+            gap: clamp(15px, 4vw, 30px);
+            animation: slideInUp 1s ease-out 0.3s both;
+            position: relative;
+            z-index: 10;
+        }
+
+        textarea {
+            width: 100%;
+            padding: clamp(0.8rem, 2vw, 1.2rem);
+            border-radius: clamp(8px, 2vw, 12px);
+            background: var(--dark-bg-input);
+            color: #E5E7EB;
+            font-size: clamp(0.9em, 2vw, 1em);
+            resize: vertical;
+            transition: all 0.3s ease;
+            min-height: clamp(80px, 20vw, 120px);
+            border: none;
+            font-family: 'Inter', sans-serif;
+        }
+
+        textarea::placeholder {
+            color: #6B7280;
+        }
+
+        textarea:focus {
+            outline: none;
+            background: rgba(13, 14, 28, 0.8);
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: clamp(0.6rem, 2vw, 1rem);
+            margin-top: clamp(1rem, 3vw, 1.5rem);
+        }
+
+        .btn-base {
+            padding: clamp(0.8rem, 2vw, 1rem) clamp(1.2rem, 3vw, 2rem);
+            font-size: clamp(0.8rem, 2vw, 0.95rem);
+            font-weight: 700;
+            border-radius: clamp(8px, 2vw, 12px);
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            min-width: clamp(120px, 30vw, 150px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(6px, 1.5vw, 8px);
+            position: relative;
+            overflow: hidden;
+            border: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .btn-base::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-base:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #A78BFA 0%, #8B5CF6 50%, #7C3AED 100%);
+            color: white;
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+        }
+
+        @media (hover: hover) {
+            .btn-primary:hover:not(:disabled) {
+                transform: translateY(-3px) scale(1.02);
+                box-shadow: 0 15px 40px rgba(139, 92, 246, 0.8);
+            }
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(-1px) scale(0.98);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #2D3748 0%, #1F2937 100%);
+            color: #9CA3AF;
+            border: 2px solid #4B5563;
+        }
+
+        @media (hover: hover) {
+            .btn-secondary:hover:not(:disabled) {
+                background: linear-gradient(135deg, #374151 0%, #2D3748 100%);
+                color: var(--secondary-glow);
+                border-color: var(--secondary-glow);
+                box-shadow: 0 0 20px rgba(45, 212, 191, 0.5);
+                transform: translateY(-2px);
+            }
+        }
+
+        .output-display {
+            width: 100%;
+            min-height: clamp(200px, 50vw, 300px);
+            max-height: clamp(350px, 70vh, 600px);
+            padding: clamp(1rem, 3vw, 1.5rem);
+            background: linear-gradient(135deg, #0D0E1C 0%, #151624 100%);
+            border: 2px solid #2D3748;
+            border-radius: clamp(8px, 2vw, 12px);
+            color: #E5E7EB;
+            font-family: 'Inter', sans-serif;
+            font-size: clamp(0.85em, 2vw, 1em);
+            line-height: 1.8;
+            overflow-y: auto;
+            overflow-x: hidden;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.7);
+        }
+
+        .output-display::-webkit-scrollbar {
+            width: clamp(6px, 1.5vw, 10px);
+        }
+
+        .output-display::-webkit-scrollbar-track {
+            background: #151624;
+            border-radius: 5px;
+        }
+
+        .output-display::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #8B5CF6, #2DD4BF);
+            border-radius: 5px;
+        }
+
+        .output-display::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #A78BFA, #5EEAD4);
+        }
+
+        .status-bar {
+            background: linear-gradient(180deg, rgba(11, 11, 20, 0.98) 0%, rgba(11, 11, 20, 1) 100%);
+            backdrop-filter: blur(10px);
+            border-top: 2px solid transparent;
+            border-image: linear-gradient(90deg, transparent, #8B5CF6, transparent) 1;
+            padding: clamp(0.7rem, 2vw, 1rem) 0;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            z-index: 99;
+        }
+
+        .status-label {
+            font-size: clamp(0.75rem, 2vw, 0.85rem);
+            font-weight: 600;
+            text-align: center;
+            color: #9CA3AF;
+            animation: statusPulse 2s ease-in-out infinite;
+            padding: 0 clamp(10px, 3vw, 20px);
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(80px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: clamp(16px, 4vw, 20px);
+            height: clamp(16px, 4vw, 20px);
+            border: 3px solid rgba(139, 92, 246, 0.3);
+            border-top-color: var(--primary-neon);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        .typing-cursor {
+            display: inline-block;
+            width: 3px;
+            height: 1.1em;
+            background: #10B981;
+            margin-left: 3px;
+            animation: blink 0.7s infinite step-start;
+        }
+
+        @keyframes blink {
+            50% { visibility: hidden; }
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: clamp(8px, 2vw, 12px);
+            font-size: clamp(1rem, 3vw, 1.3rem);
+            font-weight: 700;
+            margin-bottom: clamp(1rem, 3vw, 1.5rem);
+        }
+
+        .section-title svg {
+            width: clamp(20px, 4vw, 24px);
+            height: clamp(20px, 4vw, 24px);
+            filter: drop-shadow(0 0 5px currentColor);
+            flex-shrink: 0;
+        }
+
+        .bg-dark-bg-card {
+            background-color: var(--dark-bg-card);
+        }
+
+        .p-8 {
+            padding: clamp(1.2rem, 4vw, 2rem);
+        }
+
+        .rounded-xl {
+            border-radius: clamp(0.75rem, 2vw, 1rem);
+        }
+
+        .mt-8 {
+            margin-top: clamp(1.2rem, 4vw, 2rem);
+        }
+
+        .mb-6 {
+            margin-bottom: clamp(1rem, 3vw, 1.5rem);
+        }
+
+        /* Mobile-specific optimizations */
+        @media (max-width: 768px) {
+            body {
+                padding-bottom: 75px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn-base {
+                width: 100%;
+                min-width: unset;
+            }
+
+            .main-container {
+                gap: 18px;
+            }
+
+            textarea {
+                -webkit-appearance: none;
+                appearance: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding-top: 15px;
+                padding-bottom: 70px;
+            }
+
+            #animationCanvas {
+                opacity: 0.15;
+            }
+
+            .section-title {
+                flex-wrap: wrap;
+            }
+        }
+
+        /* Landscape mobile optimization */
+        @media (max-width: 896px) and (orientation: landscape) {
+            body {
+                padding-top: 15px;
+                padding-bottom: 60px;
+            }
+
+            .output-display {
+                max-height: 40vh;
+            }
+
+            textarea {
+                min-height: 60px;
+            }
+
+            .status-bar {
+                padding: 0.6rem 0;
+            }
+        }
+
+        /* Touch device optimizations */
+        @media (pointer: coarse) {
+            .btn-base {
+                min-height: 44px;
+            }
+
+            textarea {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="animationCanvas"></canvas>
+
+    <main class="main-container">
+        <div class="bg-dark-bg-card p-8 rounded-xl card-shadow input-glow-border">
+            <h2 class="section-title neon-text">
+                Atheist Question/Argument
+            </h2>
+            
+            <div class="input-glow-border rounded-xl">
+                <textarea id="argumentInput" placeholder="Enter the atheist question or argument (e.g., 'Who created God?')..."></textarea>
+            </div>
+
+            <h2 class="section-title mt-8 mb-6" style="color: #9CA3AF;">
+                Theist Hints (Optional)
+            </h2>
+            
+            <div class="input-glow-border rounded-xl">
+                <textarea id="beliefInput" placeholder="Add hints for the theist response (e.g., 'God by definition is uncreated' or 'Use the cosmological argument')..."></textarea>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-base btn-primary" id="generateBtn" onclick="generateArgument()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                Generate
+            </button>
+            <button class="btn-base btn-secondary" onclick="copyResponse()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                Copy
+            </button>
+            <button class="btn-base btn-secondary" onclick="clearAll()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                Clear
+            </button>
+        </div>
+
+        <div class="bg-dark-bg-card p-8 rounded-xl card-shadow">
+            <h2 class="section-title" style="color: #2DD4BF;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                Theist Response
+            </h2>
+            <div class="output-display" id="outputDisplay">Enter an argument above to begin.</div>
+        </div>
+    </main>
+
+    <footer class="status-bar">
+        <div class="status-label" id="statusLabel">
+            <span style="color: #2DD4BF; font-weight: 900;">•</span> STATUS: System Idle
+        </div>
+    </footer>
+
+    <script>
+        const API_URL = "/.netlify/functions/generate";
+
+        let lastResponse = "";
+        let isLoading = false;
+        
+        function updateStatus(text, type = "success") {
+            const statusLabel = document.getElementById("statusLabel");
+            let color, symbol;
+
+            switch (type) {
+                case "success":
+                    color = "#10B981";
+                    symbol = "✓";
+                    break;
+                case "error":
+                    color = "#EF4444";
+                    symbol = "✗";
+                    break;
+                case "processing":
+                    color = "#8B5CF6";
+                    symbol = "•";
+                    break;
+                default:
+                    color = "#9CA3AF";
+                    symbol = "•";
+            }
+
+            statusLabel.innerHTML = `
+                <span style="color: ${color}; font-weight: 900;">${symbol}</span> 
+                STATUS: ${text}
+            `;
+        }
+        
+        function constructPrompt(argument, belief) {
+            let prompt = `You are a knowledgeable theist defending faith against atheist questions. Your job is to provide a thoughtful, detailed response from a theist perspective. �
+
+Write like a human - conversational, warm, and easy to understand. Use emojis naturally to make your points clearer and more engaging.
+
+THE ATHEIST'S QUESTION/ARGUMENT:
+"${argument}"
+
+`;
+
+            if (belief) {
+                prompt += `IMPORTANT HINTS TO INCLUDE IN YOUR RESPONSE:
+${belief}
+
+Make sure you incorporate these hints into your answer! They're key points that should be part of your response.
+
+`;
+            }
+
+            prompt += `HOW TO WRITE YOUR THEIST RESPONSE:
+
+✅ YOU ARE A THEIST - defend the theist position with confidence and wisdom
+✅ Give a DETAILED, THOROUGH explanation - don't rush, take your time to explain properly
+✅ Use SIMPLE ENGLISH that anyone can understand
+✅ Add REAL-WORLD EXAMPLES to make concepts clear (like comparing God to everyday things people know)
+✅ Use emojis naturally (🤔 💭 💡 ✨ 🌟 etc.) to emphasize points
+✅ Break down complex theological/philosophical ideas into bite-sized pieces
+✅ If hints were provided above, DEFINITELY include those ideas in your response
+✅ Write 3-4 solid paragraphs with detailed explanations
+✅ Be warm, patient, and respectful - like a wise teacher explaining something important
+✅ Use analogies and metaphors to help people understand difficult concepts
+✅ Address the atheist's point directly, then build your theist counter-response
+✅ Show why the theist view makes sense logically and philosophically
+
+EXAMPLE OF THE STYLE:
+If asked "Who created God?", you might say something like:
+"Great question! 🤔 This is actually one of the most common questions, and here's the thing - it contains a hidden assumption we need to unpack. When we ask 'who created God,' we're assuming that God is the kind of being that needs to be created. But by definition, God is the uncreated creator - the necessary being that exists by His own nature... [continue with examples and deeper explanation]"
+
+Remember: You're a thoughtful theist who genuinely wants to help people understand the theist perspective. Be detailed, use examples, and make it feel like a real conversation! 
+
+Write your theist response now:`;
+
+            return prompt;
+        }
+        
+        async function generateArgument() {
+            const argument = document.getElementById("argumentInput").value.trim();
+            const belief = document.getElementById("beliefInput").value.trim();
+
+            if (!argument) {
+                updateStatus("Please enter an argument.", "error");
+                document.getElementById("argumentInput").focus();
+                return;
+            }
+
+            if (isLoading) {
+                updateStatus("Processing in progress. Please wait.", "processing");
+                return;
+            }
+
+            isLoading = true;
+            document.getElementById("generateBtn").disabled = true;
+
+            const outputDisplay = document.getElementById("outputDisplay");
+            outputDisplay.innerHTML = `<span class="spinner"></span> <span style="color: #A78BFA;">Processing...</span>`;
+            updateStatus("Generating response...", "processing");
+
+            const prompt = constructPrompt(argument, belief);
+
+            const payload = {
+                model: "meta-llama/Llama-3.1-8B-Instruct",
+                messages: [
+                    {
+                        role: "system",
+                        content: "You are a wise, knowledgeable theist who defends faith with logic, patience, and wisdom. You explain complex theological and philosophical concepts in a warm, conversational way that anyone can understand. You're like a caring teacher who uses simple language, real-world examples, and natural emojis to help people grasp deep truths about God and faith. You're thoughtful, detailed, and always respectful. You sound human - never robotic or preachy."
+                    },
+                    {
+                        role: "user",
+                        content: prompt
+                    }
+                ],
+                max_tokens: 1200,
+                temperature: 0.85
+            };
+            
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    const response = await fetch(API_URL, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP Error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (data.choices && data.choices[0]) {
+                        const answer = data.choices[0].message.content.trim();
+                        lastResponse = answer;
+                        streamResponse(answer);
+                        return;
+                    } else {
+                        throw new Error("API response lacked expected structure or contained no choice.");
+                    }
+                } catch (error) {
+                    if (attempt === 3) {
+                        displayError(`Synthesis failed after 3 attempts: ${error.message}`);
+                    } else {
+                        const delay = Math.pow(2, attempt) * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        updateStatus(`Retrying synthesis (Attempt ${attempt + 1})...`, "processing");
+                    }
+                }
+            }
+        }
+        
+        function streamResponse(text) {
+            const outputDisplay = document.getElementById("outputDisplay");
+            
+            outputDisplay.innerHTML = `<span style="color: #2DD4BF; font-weight: bold;">> Synthesis Complete</span><br><br>`;
+
+            let index = 0;
+            const displayText = document.createElement("span");
+            displayText.style.color = "#E5E7EB"; 
+            outputDisplay.appendChild(displayText);
+
+            function typeChar() {
+                if (index < text.length) {
+                    displayText.textContent += text[index];
+                    outputDisplay.scrollTop = outputDisplay.scrollHeight; 
+                    index++;
+                    setTimeout(typeChar, 15); 
+                } else {
+                    displayText.innerHTML += '<span class="typing-cursor"></span>'; 
+                    finalize();
+                }
+            }
+            typeChar();
+        }
+
+        function displayError(error) {
+            const outputDisplay = document.getElementById("outputDisplay");
+            outputDisplay.innerHTML = `<span style="color: #EF4444; font-weight: bold;">> Error</span><br><br>${error}`;
+            updateStatus("Failed to generate response.", "error");
+            finalize();
+        }
+
+        function finalize() {
+            isLoading = false;
+            document.getElementById("generateBtn").disabled = false;
+            
+            setTimeout(() => {
+                const cursor = document.querySelector('.typing-cursor');
+                if (cursor) cursor.remove();
+            }, 1500); 
+            
+            updateStatus("Response generated successfully.", "success");
+        }
+        
+        function clearAll() {
+            document.getElementById("argumentInput").value = "";
+            document.getElementById("beliefInput").value = "";
+            document.getElementById("outputDisplay").innerHTML = "Enter an argument above to begin.";
+            lastResponse = "";
+            updateStatus("System Idle", "default");
+        }
+
+        function copyResponse() {
+            if (!lastResponse) {
+                updateStatus("No response to copy.", "error");
+                return;
+            }
+
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(lastResponse).then(() => {
+                updateStatus("Response copied to clipboard.", "success");
+                }).catch(err => {
+                    console.error('Could not copy text: ', err);
+                    updateStatus("Copy failed. Try manual selection.", "error");
+                });
+            } else {
+                updateStatus("Copy failed: Clipboard access denied.", "error");
+            }
+        }
+    </script>
+    
+    <script>
+        const canvas = document.getElementById('animationCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+        let particleCount = 80;
+        const lineDistance = 150;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.6;
+                this.vy = (Math.random() - 0.5) * 0.6;
+                this.radius = Math.random() * 2.5 + 1;
+                this.color = `rgba(139, 92, 246, ${Math.random() * 0.6 + 0.4})`;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 0 || this.x > width) this.vx *= -1;
+                if (this.y < 0 || this.y > height) this.vy *= -1;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 8;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            
+            // Adjust particle count based on screen size
+            if (window.innerWidth < 768) {
+                particleCount = 40;
+            } else {
+                particleCount = 80;
+            }
+            
+            if (particles.length === 0 || particles.length !== particleCount) {
+                initParticles();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function drawLines() {
+            for (let i = 0; i < particleCount; i++) {
+                for (let j = i + 1; j < particleCount; j++) {
+                    const p1 = particles[i];
+                    const p2 = particles[j];
+                    
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < lineDistance) {
+                        const opacity = (1 - (distance / lineDistance)) * 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.strokeStyle = `rgba(45, 212, 191, ${opacity})`;
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            for (let i = 0; i < particleCount; i++) {
+                particles[i].update();
+                particles[i].draw();
+            }
+            
+            drawLines();
+
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        
+        window.onload = function() {
+            resizeCanvas();
+            initParticles();
+            animate();
+            updateStatus("System Idle", "default");
+        }
+    </script>
+</body>
+</html>
